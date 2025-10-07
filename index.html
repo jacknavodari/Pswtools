@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSW Inventory Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            background-color: #005a9c;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0;
+        }
+        main {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #005a9c;
+            border-bottom: 2px solid #005a9c;
+            padding-bottom: 10px;
+        }
+        form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="number"], select {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .remove-btn, .return-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .return-btn {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>PSW Inventory Tool</h1>
+    </header>
+    <main>
+        <section id="inventory-section">
+            <h2>Tool Inventory</h2>
+            <form id="add-tool-form">
+                <input type="text" id="tool-name" placeholder="Tool Name" required>
+                <input type="number" id="tool-quantity" placeholder="Quantity" value="1" min="1" required>
+                <button type="submit">Add Tool</button>
+            </form>
+            <ul id="tool-list"></ul>
+        </section>
+        <section id="checkout-section">
+            <h2>Checkout & Returns</h2>
+            <form id="checkout-form">
+                <input type="text" id="person-name" placeholder="Person's Name" required>
+                <select id="tool-select" required></select>
+                <button type="submit">Checkout Tool</button>
+            </form>
+            <h3>Currently Checked Out</h3>
+            <ul id="checked-out-list"></ul>
+        </section>
+        <section id="history-section">
+            <h2>History</h2>
+            <ul id="history-list"></ul>
+        </section>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const addToolForm = document.getElementById('add-tool-form');
+            const toolNameInput = document.getElementById('tool-name');
+            const toolQuantityInput = document.getElementById('tool-quantity');
+            const toolList = document.getElementById('tool-list');
+
+            const checkoutForm = document.getElementById('checkout-form');
+            const personNameInput = document.getElementById('person-name');
+            const toolSelect = document.getElementById('tool-select');
+            const checkedOutList = document.getElementById('checked-out-list');
+
+            const historyList = document.getElementById('history-list');
+
+            // Application State
+            let tools = [];
+            let checkouts = [];
+            let history = [];
+
+            // --- DATA PERSISTENCE ---
+            function saveData() {
+                localStorage.setItem('inventory_tools', JSON.stringify(tools));
+                localStorage.setItem('inventory_checkouts', JSON.stringify(checkouts));
+                localStorage.setItem('inventory_history', JSON.stringify(history));
+            }
+
+            function loadData() {
+                tools = JSON.parse(localStorage.getItem('inventory_tools')) || [];
+                checkouts = JSON.parse(localStorage.getItem('inventory_checkouts')) || [];
+                history = JSON.parse(localStorage.getItem('inventory_history')) || [];
+            }
+
+            // --- RENDER FUNCTIONS ---
+            function renderTools() {
+                toolList.innerHTML = '';
+                tools.forEach((tool, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${tool.name} (Qty: ${tool.quantity})</span>
+                        <button class="remove-btn" data-index="${index}">Remove</button>
+                    `;
+                    toolList.appendChild(li);
+                });
+                updateToolSelect();
+            }
+
+            // --- INVENTORY MANAGEMENT ---
+            addToolForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = toolNameInput.value.trim();
+                const quantity = parseInt(toolQuantityInput.value);
+                if (name && quantity > 0) {
+                    tools.push({ name, quantity });
+                    saveData();
+                    renderTools();
+                    addToolForm.reset();
+                }
+            });
+
+            toolList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) {
+                    const index = e.target.dataset.index;
+                    tools.splice(index, 1);
+                    saveData();
+                    renderAll();
+                }
+            });
+
+            // --- CHECKOUT & RETURNS ---
+            function updateToolSelect() {
+                toolSelect.innerHTML = '<option value="">Select a tool...</option>';
+                tools.forEach((tool, index) => {
+                    if (tool.quantity > 0) {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `${tool.name} (Qty: ${tool.quantity})`;
+                        toolSelect.appendChild(option);
+                    }
+                });
+            }
+
+            function renderCheckouts() {
+                checkedOutList.innerHTML = '';
+                checkouts.forEach((checkout, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${checkout.toolName} - ${checkout.personName}</span>
+                        <button class="return-btn" data-index="${index}">Return</button>
+                    `;
+                    checkedOutList.appendChild(li);
+                });
+            }
+
+            checkoutForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const personName = personNameInput.value.trim();
+                const toolIndex = toolSelect.value;
+
+                if (personName && toolIndex !== '') {
+                    const tool = tools[toolIndex];
+                    tool.quantity--;
+
+                    const checkout = {
+                        personName,
+                        toolName: tool.name,
+                        dateOut: new Date().toISOString(),
+                    };
+                    checkouts.push(checkout);
+
+                    history.push({ ...checkout, type: 'checkout' });
+
+                    saveData();
+                    renderAll();
+                    checkoutForm.reset();
+                }
+            });
+
+            checkedOutList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('return-btn')) {
+                    const index = e.target.dataset.index;
+                    const checkout = checkouts[index];
+
+                    const tool = tools.find(t => t.name === checkout.toolName);
+                    if (tool) {
+                        tool.quantity++;
+                    }
+
+                    checkouts.splice(index, 1);
+
+                    history.push({ ...checkout, type: 'return', dateIn: new Date().toISOString() });
+
+                    saveData();
+                    renderAll();
+                }
+            });
+
+            // --- HISTORY ---
+            function renderHistory() {
+                historyList.innerHTML = '';
+                [...history].reverse().forEach(item => {
+                    const li = document.createElement('li');
+                    const date = new Date(item.dateOut).toLocaleString();
+                    if (item.type === 'checkout') {
+                        li.innerHTML = `<span><b>Checkout:</b> ${item.toolName} to ${item.personName} on ${date}</span>`;
+                    } else {
+                        const returnDate = new Date(item.dateIn).toLocaleString();
+                        li.innerHTML = `<span><b>Return:</b> ${item.toolName} by ${item.personName} on ${returnDate}</span>`;
+                    }
+                    historyList.appendChild(li);
+                });
+            }
+
+            function purgeOldHistory() {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                history = history.filter(item => {
+                    const itemDate = new Date(item.dateOut);
+                    return itemDate >= thirtyDaysAgo;
+                });
+                saveData();
+            }
+
+            // --- GLOBAL RENDER ---
+            function renderAll() {
+                renderTools();
+                renderCheckouts();
+                renderHistory();
+            }
+
+            // --- INITIAL LOAD ---
+            loadData();
+            purgeOldHistory();
+            renderAll();
+        });
+    </script>
+</body>
+</html>
