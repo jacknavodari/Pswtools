@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSW Tool Inventory</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        div {
+            background-color: #fff;
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: calc(100% - 110px);
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        li:last-child {
+            border-bottom: none;
+        }
+        .tool-actions button {
+            margin-left: 5px;
+            background-color: #f0ad4e;
+        }
+        .tool-actions button.delete {
+            background-color: #d9534f;
+        }
+        .history-entry {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>PSW Tool Inventory</h1>
+
+    <div id="add-tool-section">
+        <h2>Add New Tool</h2>
+        <input type="text" id="tool-name" placeholder="Tool Name">
+        <button id="add-tool-btn">Add Tool</button>
+    </div>
+
+    <div id="inventory-section">
+        <h2>Inventory</h2>
+        <ul id="tool-list">
+            <!-- Tools will be listed here -->
+        </ul>
+    </div>
+
+    <div id="history-section">
+        <h2>History</h2>
+        <ul id="history-list">
+            <!-- History will be logged here -->
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toolNameInput = document.getElementById('tool-name');
+            const addToolBtn = document.getElementById('add-tool-btn');
+            const toolList = document.getElementById('tool-list');
+            const historyList = document.getElementById('history-list');
+
+            let tools = JSON.parse(localStorage.getItem('tools')) || [];
+            let history = JSON.parse(localStorage.getItem('history')) || [];
+
+            const saveData = () => {
+                localStorage.setItem('tools', JSON.stringify(tools));
+                localStorage.setItem('history', JSON.stringify(history));
+            };
+
+            const addHistory = (message) => {
+                const timestamp = new Date().toISOString();
+                history.unshift({ timestamp, message });
+                saveData();
+                renderHistory();
+            };
+
+            const renderTools = () => {
+                toolList.innerHTML = '';
+                tools.forEach((tool, index) => {
+                    const li = document.createElement('li');
+
+                    let status = '';
+                    if (tool.checkedOutTo) {
+                        status = ` (Checked out to: ${tool.checkedOutTo})`;
+                    }
+
+                    li.innerHTML = `
+                        <span>${tool.name}${status}</span>
+                        <div class="tool-actions">
+                            ${tool.checkedOutTo
+                                ? `<button data-index="${index}" class="return">Return</button>`
+                                : `<button data-index="${index}" class="checkout">Check Out</button>`
+                            }
+                            <button data-index="${index}" class="delete">Delete</button>
+                        </div>
+                    `;
+                    toolList.appendChild(li);
+                });
+            };
+
+            const renderHistory = () => {
+                historyList.innerHTML = '';
+                history.forEach(entry => {
+                    const li = document.createElement('li');
+                    li.className = 'history-entry';
+                    const date = new Date(entry.timestamp).toLocaleString();
+                    li.textContent = `[${date}] ${entry.message}`;
+                    historyList.appendChild(li);
+                });
+            };
+
+            const purgeOldHistory = () => {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                const originalHistoryCount = history.length;
+                history = history.filter(entry => new Date(entry.timestamp) > thirtyDaysAgo);
+
+                if (history.length < originalHistoryCount) {
+                    addHistory(`Purged ${originalHistoryCount - history.length} old history records.`);
+                    saveData();
+                }
+            };
+
+            addToolBtn.addEventListener('click', () => {
+                const toolName = toolNameInput.value.trim();
+                if (toolName) {
+                    tools.push({ name: toolName, checkedOutTo: null });
+                    addHistory(`Tool added: ${toolName}`);
+                    toolNameInput.value = '';
+                    saveData();
+                    renderTools();
+                }
+            });
+
+            toolList.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const index = e.target.dataset.index;
+                    const tool = tools[index];
+
+                    if (e.target.classList.contains('checkout')) {
+                        const person = prompt(`Who is checking out "${tool.name}"?`);
+                        if (person) {
+                            tool.checkedOutTo = person;
+                            addHistory(`"${tool.name}" checked out to ${person}.`);
+                            saveData();
+                            renderTools();
+                        }
+                    } else if (e.target.classList.contains('return')) {
+                        addHistory(`"${tool.name}" returned by ${tool.checkedOutTo}.`);
+                        tool.checkedOutTo = null;
+                        saveData();
+                        renderTools();
+                    } else if (e.target.classList.contains('delete')) {
+                        if (confirm(`Are you sure you want to delete "${tool.name}"?`)) {
+                            const deletedToolName = tool.name;
+                            tools.splice(index, 1);
+                            addHistory(`Tool deleted: ${deletedToolName}`);
+                            saveData();
+                            renderTools();
+                        }
+                    }
+                }
+            });
+
+            // Initial load
+            purgeOldHistory();
+            renderTools();
+            renderHistory();
+        });
+    </script>
+
+</body>
+</html>
