@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PSW Inventory Manager</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // Fallback if QRCode library fails to load
+        window.addEventListener('error', function(e) {
+            if (e.target && e.target.tagName === 'SCRIPT') {
+                console.warn('External script failed to load:', e.target.src);
+            }
+        }, true);
+    </script>
     <style>
         /* Global Styles */
         * {
@@ -254,9 +263,553 @@
             padding: 40px 20px;
         }
 
+        /* Tools view toggle */
+        .tools-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tools-view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .view-toggle-btn {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+        }
+
+        .view-toggle-btn.active {
+            background-color: #ff8c00;
+            color: white;
+        }
+
+        .btn-show-tools {
+            background-color: #ff8c00;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        /* List view styles */
+        .tools-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tools-list.list-view {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .tools-list.list-view .tool-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .tools-list.list-view .tool-info {
+            flex: 1;
+        }
+
+        .tools-list.list-view .tool-info h4 {
+            margin: 0;
+            display: inline;
+            font-size: 1.1rem;
+        }
+
+        .tools-list.list-view .tool-info .tool-description {
+            display: inline;
+            margin: 0 10px;
+            color: #666;
+        }
+
+        .tools-list.list-view .tool-quantity {
+            display: inline;
+            margin: 0 10px;
+            padding: 0;
+            border: none;
+        }
+
+        .tools-list.list-view .tool-quantity span {
+            display: inline;
+            margin-right: 15px;
+        }
+
+        .tools-list.list-view .tool-actions {
+            margin: 0;
+            gap: 8px;
+        }
+
+        .tools-list.list-view .tool-actions button {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Hidden tools container */
+        .tools-hidden-message {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .tools-hidden-message p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
         /* People Styles */
         .person-borrowed {
             font-weight: 500;
+        }
+
+        /* People view toggle */
+        .people-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .people-view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-show-people {
+            background-color: #ff8c00;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        /* List view styles for people */
+        .people-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .people-list.list-view {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .people-list.list-view .person-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .people-list.list-view .person-info {
+            flex: 1;
+        }
+
+        .people-list.list-view .person-info h4 {
+            margin: 0;
+            display: inline;
+            font-size: 1.1rem;
+        }
+
+        .people-list.list-view .person-info .person-department {
+            display: inline;
+            margin: 0 10px;
+            color: #666;
+        }
+
+        .people-list.list-view .person-info .person-borrowed {
+            display: inline;
+            margin: 0 10px;
+        }
+
+        .people-list.list-view .person-actions {
+            margin: 0;
+            gap: 8px;
+        }
+
+        .people-list.list-view .person-actions button {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        /* Hidden people container */
+        .people-hidden-message {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .people-hidden-message p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        /* Borrow Styles */
+        .active-borrows-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .borrows-view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-show-borrows {
+            background-color: #ff8c00;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .borrows-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .borrows-list.list-view {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .borrows-list.list-view .borrow-record {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .borrows-list.list-view .borrow-info {
+            flex: 1;
+        }
+
+        .borrows-list.list-view .borrow-info h4 {
+            margin: 0;
+            display: inline;
+            font-size: 1.1rem;
+        }
+
+        .borrows-list.list-view .borrow-info p {
+            display: inline;
+            margin: 0 10px;
+            font-size: 0.9rem;
+        }
+
+        .borrows-list.list-view .borrow-info .borrow-date {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+
+        .borrows-list.list-view .borrow-actions {
+            margin: 0;
+            gap: 8px;
+        }
+
+        .borrows-list.list-view .borrow-actions button {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .borrows-hidden-message {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .borrows-hidden-message p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        /* History Styles */
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-view-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-show-history {
+            background-color: #ff8c00;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1rem;
+        }
+
+        .history-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .history-list.list-view {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .history-list.list-view .history-record {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+        }
+
+        .history-list.list-view .history-info {
+            flex: 1;
+        }
+
+        .history-list.list-view .history-info h4 {
+            margin: 0;
+            display: inline;
+            font-size: 1.1rem;
+        }
+
+        .history-list.list-view .history-info p {
+            display: inline;
+            margin: 0 10px;
+            font-size: 0.9rem;
+        }
+
+        .history-list.list-view .history-info .borrow-date,
+        .history-list.list-view .history-info .return-date {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+        }
+
+        .history-list.list-view .history-status {
+            margin: 0;
+        }
+
+        .history-hidden-message {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .history-hidden-message p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+
+        /* QR Scanner Panel */
+        .scanner-panel {
+            background-color: #f8f9fa;
+            border: 2px solid #ff8c00;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .scanner-panel h4 {
+            color: #ff8c00;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .scanner-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .scanner-status.ready {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .scanner-status.waiting-person {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .scanner-status.complete {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .scanner-input-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .scanner-input-container input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .scanner-input-container input:focus {
+            border-color: #ff8c00;
+            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.2);
+        }
+
+        .scanner-result {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .scanner-result h5 {
+            color: #ff8c00;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .scanner-result p {
+            margin: 5px 0;
+            font-size: 0.95rem;
+        }
+
+        .scanner-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .scan-mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .scan-mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background-color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .scan-mode-btn.active {
+            border-color: #ff8c00;
+            background-color: #fff3e0;
+            color: #ff8c00;
+        }
+
+        .scan-mode-btn:hover:not(.active) {
+            border-color: #ff8c00;
+        }
+
+        /* Data Management Styles */
+        .data-management {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .data-management h4 {
+            color: #ff8c00;
+            margin-bottom: 15px;
+        }
+
+        .auto-save-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .auto-save-status.saving {
+            background-color: #fff3e0;
+        }
+
+        .save-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .save-indicator.saving {
+            background-color: #ff9800;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .data-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-export {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-import {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-clear {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        #import-file-input {
+            display: none;
         }
 
         /* Borrow Styles */
@@ -277,6 +830,34 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 10px;
+        }
+
+        .history-date-filter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .history-date-filter input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .history-date-filter input[type="date"]:focus {
+            outline: none;
+            border-color: #ff8c00;
+            box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+        }
+
+        .btn-today {
+            background-color: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9rem;
         }
 
         .filter-controls {
@@ -326,27 +907,352 @@
                 text-align: center;
                 gap: 10px;
             }
-            
+
             .nav-tabs {
                 flex-direction: column;
             }
-            
+
             .nav-tab {
                 text-align: center;
             }
-            
+
             .tools-grid, .people-grid, .borrows-list, .history-list {
                 grid-template-columns: 1fr;
             }
-            
+
             .history-controls {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .form-actions {
                 flex-direction: column;
             }
+        }
+
+        /* QR Code Modal Styles */
+        .qr-modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-modal.active {
+            display: flex !important;
+        }
+
+        .qr-modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            margin: auto;
+        }
+
+        .qr-modal-content h3 {
+            margin-bottom: 20px;
+            color: #ff8c00;
+        }
+
+        .qr-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .qr-option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .qr-option-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .qr-option-group select {
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 120px;
+        }
+
+        .qr-code-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .qr-code-container img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .qr-tool-info {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .qr-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-print {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-batch {
+            background-color: #17a2b8;
+            color: white;
+        }
+
+        /* Print Styles for Small Printer */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 10px;
+            }
+
+            /* Label sizes */
+            .print-label {
+                text-align: center;
+                border: 2px solid #000;
+                padding: 15px;
+                margin: 10px;
+                display: inline-block;
+                background-color: #fff;
+                page-break-inside: avoid;
+            }
+
+            .print-label.xs {
+                padding: 5px;
+                border-width: 1px;
+            }
+
+            .print-label.s {
+                padding: 8px;
+            }
+
+            .print-label.m {
+                padding: 15px;
+            }
+
+            .print-label.l {
+                padding: 20px;
+            }
+
+            .print-label h4 {
+                margin: 0 0 8px 0;
+                font-weight: bold;
+            }
+
+            .print-label.xs h4 {
+                font-size: 10px;
+                margin-bottom: 3px;
+            }
+
+            .print-label.s h4 {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+
+            .print-label.m h4 {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            .print-label.l h4 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+            .print-label p {
+                margin: 3px 0;
+                font-size: 10px;
+            }
+
+            .print-label.xs p {
+                font-size: 7px;
+            }
+
+            .print-label.s p {
+                font-size: 8px;
+            }
+
+            .print-label.m p {
+                font-size: 10px;
+            }
+
+            .print-label.l p {
+                font-size: 12px;
+            }
+
+            .print-label .qr-print-img {
+                margin: 5px auto;
+                display: block;
+            }
+
+            .print-label.xs .qr-print-img {
+                width: 50px;
+                height: 50px;
+            }
+
+            .print-label.s .qr-print-img {
+                width: 80px;
+                height: 80px;
+            }
+
+            .print-label.m .qr-print-img {
+                width: 120px;
+                height: 120px;
+            }
+
+            .print-label.l .qr-print-img {
+                width: 180px;
+                height: 180px;
+            }
+
+            /* Compact style - QR code only with minimal text */
+            .print-label.compact h4 {
+                display: none;
+            }
+
+            .print-label.compact p {
+                display: none;
+            }
+
+            .print-label.compact .qr-print-img {
+                margin: 0 auto;
+            }
+
+            /* Grid layout for batch printing */
+            .print-area.batch-grid {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+
+            .print-area.batch-grid .print-label {
+                margin: 5px;
+            }
+        }
+
+        /* Hidden print area */
+        .print-area {
+            display: none;
+        }
+
+        /* Custom Alert Modal */
+        .alert-modal {
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .alert-modal.active {
+            display: flex !important;
+        }
+
+        .alert-modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            margin: auto;
+        }
+
+        .alert-modal-content h4 {
+            color: #ff8c00;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .alert-modal-content p {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        .alert-modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* Batch QR modal */
+        .batch-qr-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .batch-qr-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+
+        .batch-qr-item img {
+            width: 100px;
+            height: 100px;
+        }
+
+        .batch-qr-item p {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -403,10 +1309,17 @@
                             </div>
                         </form>
                     </div>
-                    
+
                     <div class="tools-list-container">
-                        <h3>Current Tools (<span id="tools-count">0</span>)</h3>
-                        <div id="tools-list" class="tools-grid">
+                        <div class="tools-header">
+                            <h3>Current Tools (<span id="tools-count">0</span>)</h3>
+                            <div class="tools-view-controls">
+                                <button class="btn-show-tools" id="toggle-tools-btn" onclick="if(app) app.toggleToolsVisibility()">Show Tools</button>
+                                <button class="view-toggle-btn active" id="card-view-btn" onclick="if(app) app.setView('card')" title="Card View">▦ Cards</button>
+                                <button class="view-toggle-btn" id="list-view-btn" onclick="if(app) app.setView('list')" title="List View">☰ List</button>
+                            </div>
+                        </div>
+                        <div id="tools-list" class="tools-list">
                             <p class="no-tools">No tools in inventory. Add some tools to get started!</p>
                         </div>
                     </div>
@@ -439,12 +1352,34 @@
                             </div>
                         </form>
                     </div>
-                    
+
                     <div class="people-list-container">
-                        <h3>Current Personnel (<span id="people-count">0</span>)</h3>
-                        <div id="people-list" class="people-grid">
+                        <div class="people-header">
+                            <h3>Current Personnel (<span id="people-count">0</span>)</h3>
+                            <div class="people-view-controls">
+                                <button class="btn-show-people" id="toggle-people-btn" onclick="if(app) app.togglePeopleVisibility()">Show People</button>
+                                <button class="view-toggle-btn active" id="people-card-view-btn" onclick="if(app) app.setPeopleView('card')" title="Card View">▦ Cards</button>
+                                <button class="view-toggle-btn" id="people-list-view-btn" onclick="if(app) app.setPeopleView('list')" title="List View">☰ List</button>
+                            </div>
+                        </div>
+                        <div id="people-list" class="people-list">
                             <p class="no-people">No people in database. Add some personnel to get started!</p>
                         </div>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="data-management">
+                        <h4>💾 Data Management</h4>
+                        <div class="auto-save-status" id="auto-save-status">
+                            <span class="save-indicator" id="save-indicator"></span>
+                            <span id="save-status-text">✓ Auto-save enabled - All changes saved automatically</span>
+                        </div>
+                        <div class="data-actions">
+                            <button class="btn-export" onclick="if(app) app.exportData()">📥 Export JSON</button>
+                            <button class="btn-import" onclick="document.getElementById('import-file-input').click()">📤 Import JSON</button>
+                            <button class="btn-clear" onclick="if(app) app.clearAllData()">🗑️ Clear All Data</button>
+                        </div>
+                        <input type="file" id="import-file-input" accept=".json" onchange="if(app) app.importData(this)">
                     </div>
                 </div>
             </div>
@@ -453,10 +1388,38 @@
             <div class="tab-content" id="borrow-tab" style="display: none;">
                 <div class="borrow-container">
                     <h2>Borrow/Return Tools</h2>
-                    
+
+                    <!-- QR Scanner Panel -->
+                    <div class="scanner-panel">
+                        <h4>
+                            📷 Quick Scan Mode
+                            <span id="scanner-status" class="scanner-status ready">Ready to Scan</span>
+                        </h4>
+                        
+                        <div class="scan-mode-toggle">
+                            <button class="scan-mode-btn active" onclick="if(app) app.setScanMode('borrow')" id="scan-borrow-btn">
+                                📤 Borrow Tool
+                            </button>
+                            <button class="scan-mode-btn" onclick="if(app) app.setScanMode('return')" id="scan-return-btn">
+                                📥 Return Tool
+                            </button>
+                        </div>
+
+                        <div class="scanner-input-container">
+                            <input type="text" id="scanner-input" placeholder="Scan QR code (tool or person)..." autocomplete="off">
+                        </div>
+
+                        <div id="scanner-results"></div>
+
+                        <div class="scanner-actions" id="scanner-actions" style="display: none;">
+                            <button class="btn-primary" id="confirm-scan-btn" onclick="if(app) app.confirmScan()">Confirm</button>
+                            <button class="btn-secondary" onclick="if(app) app.clearScan()">Clear</button>
+                        </div>
+                    </div>
+
                     <div class="borrow-form-container">
                         <form id="borrow-form">
-                            <h3>Borrow a Tool</h3>
+                            <h3>Manual Entry</h3>
                             
                             <div class="form-group">
                                 <label for="borrow-tool">Select Tool:</label>
@@ -477,9 +1440,16 @@
                             </div>
                         </form>
                     </div>
-                    
+
                     <div class="active-borrows-container">
-                        <h3>Active Borrows (<span id="active-borrows-count">0</span>)</h3>
+                        <div class="active-borrows-header">
+                            <h3>Active Borrows (<span id="active-borrows-count">0</span>)</h3>
+                            <div class="borrows-view-controls">
+                                <button class="btn-show-borrows" id="toggle-borrows-btn" onclick="if(app) app.toggleBorrowsVisibility()">Show Borrows</button>
+                                <button class="view-toggle-btn active" id="borrows-card-view-btn" onclick="if(app) app.setBorrowsView('card')" title="Card View">▦ Cards</button>
+                                <button class="view-toggle-btn" id="borrows-list-view-btn" onclick="if(app) app.setBorrowsView('list')" title="List View">☰ List</button>
+                            </div>
+                        </div>
                         <div id="active-borrows-list" class="borrows-list">
                             <p class="no-active-borrows">No active borrows at the moment.</p>
                         </div>
@@ -492,8 +1462,13 @@
                 <div class="history-container">
                     <h2>Borrowing History</h2>
                     <p class="history-note">Records are automatically deleted after 30 days</p>
-                    
+
                     <div class="history-controls">
+                        <div class="history-date-filter">
+                            <label for="history-date">📅 Date: </label>
+                            <input type="date" id="history-date">
+                            <button class="btn-today" onclick="if(app) app.setHistoryDateToday()">Today</button>
+                        </div>
                         <div class="filter-controls">
                             <label for="history-filter">Filter: </label>
                             <select id="history-filter">
@@ -502,11 +1477,16 @@
                                 <option value="returned">Returned</option>
                             </select>
                         </div>
+                        <div class="history-view-controls">
+                            <button class="btn-show-history" id="toggle-history-btn" onclick="if(app) app.toggleHistoryVisibility()">Show History</button>
+                            <button class="view-toggle-btn active" id="history-card-view-btn" onclick="if(app) app.setHistoryView('card')" title="Card View">▦ Cards</button>
+                            <button class="view-toggle-btn" id="history-list-view-btn" onclick="if(app) app.setHistoryView('list')" title="List View">☰ List</button>
+                        </div>
                         <div class="history-summary">
                             Total Records: <span id="history-count">0</span>
                         </div>
                     </div>
-                    
+
                     <div class="history-list-container">
                         <div id="history-list" class="history-list">
                             <p class="no-history">No history records found.</p>
@@ -515,6 +1495,96 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="qr-modal">
+        <div class="qr-modal-content">
+            <h3>Tool QR Code</h3>
+            
+            <div class="qr-options">
+                <div class="qr-option-group">
+                    <label for="qr-size">Size:</label>
+                    <select id="qr-size" onchange="if(app) app.regenerateQR()">
+                        <option value="xs">XS (50x50)</option>
+                        <option value="s">S (80x80)</option>
+                        <option value="m" selected>M (120x120)</option>
+                        <option value="l">L (180x180)</option>
+                    </select>
+                </div>
+                <div class="qr-option-group">
+                    <label for="qr-format">Format:</label>
+                    <select id="qr-format" onchange="if(app) app.regenerateQR()">
+                        <option value="full">Full Info</option>
+                        <option value="compact">Compact (ID only)</option>
+                        <option value="url">URL Format</option>
+                    </select>
+                </div>
+                <div class="qr-option-group">
+                    <label for="qr-style">Style:</label>
+                    <select id="qr-style" onchange="if(app) app.regenerateQR()">
+                        <option value="standard">Standard</option>
+                        <option value="compact">QR Only</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="qr-code-container">
+                <div id="qrcode"></div>
+                <div class="qr-tool-info" id="qr-tool-name"></div>
+            </div>
+            <div class="qr-modal-actions">
+                <button class="btn-print" onclick="if(app) app.printQRCode()">Print QR Code</button>
+                <button class="btn-batch" onclick="if(app) app.showBatchQR()">Batch All Tools</button>
+                <button class="btn-secondary" onclick="if(app) app.closeQRModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch QR Modal -->
+    <div id="batch-modal" class="qr-modal">
+        <div class="qr-modal-content">
+            <h3>Batch QR Codes - All Tools</h3>
+            <div class="qr-options">
+                <div class="qr-option-group">
+                    <label for="batch-size">Size:</label>
+                    <select id="batch-size" onchange="if(app) app.generateBatchQR()">
+                        <option value="xs">XS (50x50)</option>
+                        <option value="s" selected>S (80x80)</option>
+                        <option value="m">M (120x120)</option>
+                        <option value="l">L (180x180)</option>
+                    </select>
+                </div>
+                <div class="qr-option-group">
+                    <label for="batch-format">Format:</label>
+                    <select id="batch-format" onchange="if(app) app.generateBatchQR()">
+                        <option value="full">Full Info</option>
+                        <option value="compact">Compact (ID only)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="batch-qr-container" class="batch-qr-container"></div>
+            <div class="qr-modal-actions">
+                <button class="btn-print" onclick="if(app) app.printBatchQR()">Print All</button>
+                <button class="btn-secondary" onclick="if(app) app.closeBatchModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="alert-modal">
+        <div class="alert-modal-content">
+            <h4 id="alert-title">Alert</h4>
+            <p id="alert-message"></p>
+            <div class="alert-modal-actions">
+                <button class="btn-primary" onclick="if(app) app.closeAlert()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Print Area -->
+    <div class="print-area">
+        <div id="print-labels-container"></div>
     </div>
 
     <script>
@@ -554,28 +1624,70 @@
                 this.tools = [];
                 this.people = [];
                 this.borrowRecords = [];
+                this.autoSaveEnabled = true;
                 this.loadFromLocalStorage();
             }
 
             // Load data from localStorage
             loadFromLocalStorage() {
-                const storedTools = localStorage.getItem('psw_tools');
-                const storedPeople = localStorage.getItem('psw_people');
-                const storedBorrowRecords = localStorage.getItem('psw_borrowRecords');
+                try {
+                    const storedTools = localStorage.getItem('psw_tools');
+                    const storedPeople = localStorage.getItem('psw_people');
+                    const storedBorrowRecords = localStorage.getItem('psw_borrowRecords');
 
-                this.tools = storedTools ? JSON.parse(storedTools).map(t => new Tool(t.id, t.name, t.description, t.quantity)) : [];
-                this.people = storedPeople ? JSON.parse(storedPeople).map(p => new Person(p.id, p.name, p.department)) : [];
-                this.borrowRecords = storedBorrowRecords ? JSON.parse(storedBorrowRecords).map(br => new BorrowRecord(br.id, br.toolId, br.personId, new Date(br.borrowDate), br.returnDate ? new Date(br.returnDate) : null)) : [];
-                
+                    this.tools = storedTools ? JSON.parse(storedTools).map(t => new Tool(t.id, t.name, t.description, t.quantity)) : [];
+                    this.people = storedPeople ? JSON.parse(storedPeople).map(p => new Person(p.id, p.name, p.department)) : [];
+                    this.borrowRecords = storedBorrowRecords ? JSON.parse(storedBorrowRecords).map(br => new BorrowRecord(br.id, br.toolId, br.personId, new Date(br.borrowDate), br.returnDate ? new Date(br.returnDate) : null)) : [];
+                } catch (error) {
+                    console.error('Error loading from localStorage:', error);
+                }
+
                 // Update available quantities based on borrowed tools
                 this.updateAvailableQuantities();
             }
 
             // Save data to localStorage
             saveToLocalStorage() {
-                localStorage.setItem('psw_tools', JSON.stringify(this.tools));
-                localStorage.setItem('psw_people', JSON.stringify(this.people));
-                localStorage.setItem('psw_borrowRecords', JSON.stringify(this.borrowRecords));
+                try {
+                    localStorage.setItem('psw_tools', JSON.stringify(this.tools));
+                    localStorage.setItem('psw_people', JSON.stringify(this.people));
+                    localStorage.setItem('psw_borrowRecords', JSON.stringify(this.borrowRecords));
+                } catch (error) {
+                    console.error('Error saving to localStorage:', error);
+                }
+            }
+
+            // Export to JSON file
+            exportToJSON() {
+                const data = {
+                    tools: this.tools,
+                    people: this.people,
+                    borrowRecords: this.borrowRecords,
+                    lastSaved: new Date().toISOString()
+                };
+
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `psw-inventory-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Auto-save on every change
+            autoSave() {
+                if (this.autoSaveEnabled) {
+                    this.saveToLocalStorage();
+                    // Trigger visual feedback
+                    if (app && app.showSaveStatus) {
+                        app.showSaveStatus();
+                    }
+                }
             }
 
             // Update available quantities based on borrowed tools
@@ -600,18 +1712,18 @@
             addTool(name, description = '', quantity = 1) {
                 const newTool = new Tool(Date.now().toString(), name, description, quantity);
                 this.tools.push(newTool);
-                this.saveToLocalStorage();
+                this.autoSave();
                 return newTool;
             }
 
             removeTool(toolId) {
                 // Remove tool from tools list
                 this.tools = this.tools.filter(tool => tool.id !== toolId);
-                
+
                 // Remove any borrow records for this tool
                 this.borrowRecords = this.borrowRecords.filter(record => record.toolId !== toolId);
-                
-                this.saveToLocalStorage();
+
+                this.autoSave();
             }
 
             updateTool(toolId, name, description, quantity) {
@@ -621,7 +1733,7 @@
                     tool.description = description;
                     tool.quantity = parseInt(quantity);
                     // We don't update available here as it's calculated based on borrows
-                    this.saveToLocalStorage();
+                    this.autoSave();
                     this.updateAvailableQuantities(); // Recalculate available quantities
                 }
             }
@@ -638,18 +1750,18 @@
             addPerson(name, department = '') {
                 const newPerson = new Person(Date.now().toString(), name, department);
                 this.people.push(newPerson);
-                this.saveToLocalStorage();
+                this.autoSave();
                 return newPerson;
             }
 
             removePerson(personId) {
                 // Remove person from people list
                 this.people = this.people.filter(person => person.id !== personId);
-                
+
                 // Remove any borrow records for this person
                 this.borrowRecords = this.borrowRecords.filter(record => record.personId !== personId);
-                
-                this.saveToLocalStorage();
+
+                this.autoSave();
             }
 
             updatePerson(personId, name, department) {
@@ -657,7 +1769,7 @@
                 if (person) {
                     person.name = name;
                     person.department = department;
-                    this.saveToLocalStorage();
+                    this.autoSave();
                 }
             }
 
@@ -679,7 +1791,7 @@
                 }
 
                 if (tool.available <= 0) {
-                    throw new Error('No tools available for borrowing');
+                    throw new Error(`All "${tool.name}" tools are currently borrowed. Available: 0 of ${tool.quantity}`);
                 }
 
                 // Create borrow record
@@ -698,7 +1810,7 @@
                 // Update tool availability
                 tool.available--;
 
-                this.saveToLocalStorage();
+                this.autoSave();
                 return borrowRecord;
             }
 
@@ -712,8 +1824,8 @@
 
                 // Find active borrow record
                 const borrowRecord = this.borrowRecords.find(
-                    record => record.toolId === toolId && 
-                            record.personId === personId && 
+                    record => record.toolId === toolId &&
+                            record.personId === personId &&
                             record.returnDate === null
                 );
 
@@ -730,7 +1842,7 @@
                 // Update tool availability
                 tool.available++;
 
-                this.saveToLocalStorage();
+                this.autoSave();
                 return borrowRecord;
             }
 
@@ -759,9 +1871,9 @@
 
                 const initialLength = this.borrowRecords.length;
                 this.borrowRecords = this.borrowRecords.filter(record => new Date(record.borrowDate) >= cutoffDate);
-                
+
                 if (this.borrowRecords.length < initialLength) {
-                    this.saveToLocalStorage();
+                    this.autoSave();
                 }
             }
 
@@ -798,21 +1910,47 @@
             constructor() {
                 this.dataService = new DataService();
                 this.activeTab = 'tools';
+                this.currentTool = null;
+                this.toolsVisible = false;
+                this.currentView = 'card';
+                this.peopleVisible = false;
+                this.peopleView = 'card';
+                this.borrowsVisible = false;
+                this.borrowsView = 'card';
+                this.historyVisible = false;
+                this.historyView = 'card';
+                this.scanMode = 'borrow';
+                this.scannedTool = null;
+                this.scannedPerson = null;
                 this.init();
             }
 
             init() {
-                // Clean old records on app start
-                this.dataService.cleanOldRecords();
-                
-                // Set up event listeners
-                this.setupEventListeners();
-                
-                // Load initial data
-                this.loadTools();
-                this.loadPeople();
-                this.loadBorrowData();
-                this.loadHistory();
+                try {
+                    // Clean old records on app start
+                    this.dataService.cleanOldRecords();
+
+                    // Set up event listeners
+                    this.setupEventListeners();
+
+                    // Initialize scanner
+                    this.initScanner();
+
+                    // Load initial data
+                    this.toolsVisible = false;
+                    this.showToolsHiddenMessage();
+                    this.peopleVisible = false;
+                    this.showPeopleHiddenMessage();
+                    this.borrowsVisible = false;
+                    this.showBorrowsHiddenMessage();
+                    this.historyVisible = false;
+                    this.showHistoryHiddenMessage();
+                    
+                    // Always populate borrow dropdowns (form is always visible)
+                    this.loadBorrowData();
+                } catch (error) {
+                    console.error('Error initializing app:', error);
+                }
             }
 
             setupEventListeners() {
@@ -823,36 +1961,92 @@
                     });
                 });
 
+                // Close QR modal when clicking outside
+                const qrModal = document.getElementById('qr-modal');
+                if (qrModal) {
+                    qrModal.addEventListener('click', (e) => {
+                        if (e.target.id === 'qr-modal') {
+                            this.closeQRModal();
+                        }
+                    });
+                }
+
+                // Close batch modal when clicking outside
+                const batchModal = document.getElementById('batch-modal');
+                if (batchModal) {
+                    batchModal.addEventListener('click', (e) => {
+                        if (e.target.id === 'batch-modal') {
+                            this.closeBatchModal();
+                        }
+                    });
+                }
+
+                // Close alert modal when clicking outside
+                const alertModal = document.getElementById('alert-modal');
+                if (alertModal) {
+                    alertModal.addEventListener('click', (e) => {
+                        if (e.target.id === 'alert-modal') {
+                            this.closeAlert();
+                        }
+                    });
+                }
+
                 // Tools form
-                document.getElementById('tools-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleToolSubmit();
-                });
-                
-                document.getElementById('cancel-tool-btn').addEventListener('click', () => {
-                    this.resetToolForm();
-                });
+                const toolsForm = document.getElementById('tools-form');
+                if (toolsForm) {
+                    toolsForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleToolSubmit();
+                    });
+                }
+
+                const cancelToolBtn = document.getElementById('cancel-tool-btn');
+                if (cancelToolBtn) {
+                    cancelToolBtn.addEventListener('click', () => {
+                        this.resetToolForm();
+                    });
+                }
 
                 // People form
-                document.getElementById('people-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handlePersonSubmit();
-                });
-                
-                document.getElementById('cancel-person-btn').addEventListener('click', () => {
-                    this.resetPersonForm();
-                });
+                const peopleForm = document.getElementById('people-form');
+                if (peopleForm) {
+                    peopleForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handlePersonSubmit();
+                    });
+                }
+
+                const cancelPersonBtn = document.getElementById('cancel-person-btn');
+                if (cancelPersonBtn) {
+                    cancelPersonBtn.addEventListener('click', () => {
+                        this.resetPersonForm();
+                    });
+                }
 
                 // Borrow form
-                document.getElementById('borrow-form').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleBorrowSubmit();
-                });
+                const borrowForm = document.getElementById('borrow-form');
+                if (borrowForm) {
+                    borrowForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleBorrowSubmit();
+                    });
+                }
 
                 // History filter
-                document.getElementById('history-filter').addEventListener('change', () => {
-                    this.loadHistory();
-                });
+                const historyFilter = document.getElementById('history-filter');
+                if (historyFilter) {
+                    historyFilter.addEventListener('change', () => {
+                        this.loadHistory();
+                    });
+                }
+
+                // History date picker
+                const historyDate = document.getElementById('history-date');
+                if (historyDate) {
+                    historyDate.addEventListener('change', () => {
+                        this.loadHistory();
+                    });
+                }
             }
 
             switchTab(tabName) {
@@ -870,19 +2064,35 @@
                 
                 // Update active tab and refresh data if needed
                 this.activeTab = tabName;
-                
+
                 switch(tabName) {
                     case 'tools':
-                        this.loadTools();
+                        if (this.toolsVisible) {
+                            this.loadTools();
+                        } else {
+                            this.showToolsHiddenMessage();
+                        }
                         break;
                     case 'people':
-                        this.loadPeople();
+                        if (this.peopleVisible) {
+                            this.loadPeople();
+                        } else {
+                            this.showPeopleHiddenMessage();
+                        }
                         break;
                     case 'borrow':
-                        this.loadBorrowData();
+                        if (this.borrowsVisible) {
+                            this.loadBorrowData();
+                        } else {
+                            this.showBorrowsHiddenMessage();
+                        }
                         break;
                     case 'history':
-                        this.loadHistory();
+                        if (this.historyVisible) {
+                            this.loadHistory();
+                        } else {
+                            this.showHistoryHiddenMessage();
+                        }
                         break;
                 }
             }
@@ -916,6 +2126,7 @@
                         <div class="tool-actions">
                             <button class="btn-secondary edit-tool-btn" data-id="${tool.id}">Edit</button>
                             <button class="btn-danger delete-tool-btn" data-id="${tool.id}">Delete</button>
+                            <button class="btn-success qr-code-btn" data-id="${tool.id}">QR Code</button>
                         </div>
                     `;
                     toolsList.appendChild(toolCard);
@@ -935,6 +2146,65 @@
                         this.deleteTool(toolId);
                     });
                 });
+
+                document.querySelectorAll('.qr-code-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const toolId = e.target.dataset.id;
+                        this.showQRCode(toolId);
+                    });
+                });
+            }
+
+            toggleToolsVisibility() {
+                this.toolsVisible = !this.toolsVisible;
+                const toolsList = document.getElementById('tools-list');
+                const toggleBtn = document.getElementById('toggle-tools-btn');
+                const viewControls = document.querySelector('.tools-view-controls');
+
+                if (this.toolsVisible) {
+                    toggleBtn.textContent = 'Hide Tools';
+                    viewControls.style.visibility = 'visible';
+                    this.loadTools();
+                } else {
+                    this.showToolsHiddenMessage();
+                    toggleBtn.textContent = 'Show Tools';
+                    viewControls.style.visibility = 'hidden';
+                }
+            }
+
+            showToolsHiddenMessage() {
+                const toolsList = document.getElementById('tools-list');
+                const toolsCount = document.getElementById('tools-count');
+                const tools = this.dataService.getAllTools();
+
+                toolsCount.textContent = tools.length;
+                toolsList.innerHTML = `
+                    <div class="tools-hidden-message">
+                        <p>Tools are currently hidden</p>
+                        <button class="btn-show-tools" onclick="if(app) app.toggleToolsVisibility()">Show Tools</button>
+                    </div>
+                `;
+            }
+
+            setView(view) {
+                this.currentView = view;
+                const toolsList = document.getElementById('tools-list');
+                const cardViewBtn = document.getElementById('card-view-btn');
+                const listViewBtn = document.getElementById('list-view-btn');
+
+                if (view === 'card') {
+                    toolsList.classList.remove('list-view');
+                    cardViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                } else {
+                    toolsList.classList.add('list-view');
+                    cardViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                }
+
+                if (this.toolsVisible) {
+                    this.loadTools();
+                }
             }
 
             handleToolSubmit() {
@@ -942,12 +2212,12 @@
                 const description = document.getElementById('tool-description').value.trim();
                 const quantity = document.getElementById('tool-quantity').value;
                 const editingToolId = document.getElementById('editing-tool-id').value;
-                
+
                 if (!name) {
-                    alert('Please enter a tool name');
+                    this.showAlert('Validation Error', 'Please enter a tool name');
                     return;
                 }
-                
+
                 if (editingToolId) {
                     // Update existing tool
                     this.dataService.updateTool(editingToolId, name, description, quantity);
@@ -955,9 +2225,13 @@
                     // Add new tool
                     this.dataService.addTool(name, description, quantity);
                 }
-                
+
                 this.resetToolForm();
                 this.loadTools();
+                // Refresh borrow dropdown if on borrow tab
+                if (this.activeTab === 'borrow') {
+                    this.loadBorrowData();
+                }
             }
 
             editTool(toolId) {
@@ -979,7 +2253,11 @@
                 if (confirm('Are you sure you want to delete this tool?')) {
                     this.dataService.removeTool(toolId);
                     this.loadTools();
-                    
+                    // Refresh borrow dropdown if on borrow tab
+                    if (this.activeTab === 'borrow') {
+                        this.loadBorrowData();
+                    }
+
                     // Reset form if we were editing this tool
                     const editingToolId = document.getElementById('editing-tool-id').value;
                     if (editingToolId === toolId) {
@@ -1021,6 +2299,7 @@
                         <div class="person-actions">
                             <button class="btn-secondary edit-person-btn" data-id="${person.id}">Edit</button>
                             <button class="btn-danger delete-person-btn" data-id="${person.id}">Delete</button>
+                            <button class="btn-success qr-person-btn" data-id="${person.id}">QR Code</button>
                         </div>
                     `;
                     peopleList.appendChild(personCard);
@@ -1040,18 +2319,77 @@
                         this.deletePerson(personId);
                     });
                 });
+
+                document.querySelectorAll('.qr-person-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const personId = e.target.dataset.id;
+                        this.showPersonQRCode(personId);
+                    });
+                });
+            }
+
+            togglePeopleVisibility() {
+                this.peopleVisible = !this.peopleVisible;
+                const peopleList = document.getElementById('people-list');
+                const toggleBtn = document.getElementById('toggle-people-btn');
+                const viewControls = document.querySelector('.people-view-controls');
+
+                if (this.peopleVisible) {
+                    toggleBtn.textContent = 'Hide People';
+                    viewControls.style.visibility = 'visible';
+                    this.loadPeople();
+                } else {
+                    this.showPeopleHiddenMessage();
+                    toggleBtn.textContent = 'Show People';
+                    viewControls.style.visibility = 'hidden';
+                }
+            }
+
+            showPeopleHiddenMessage() {
+                const peopleList = document.getElementById('people-list');
+                const peopleCount = document.getElementById('people-count');
+                const people = this.dataService.getAllPeople();
+
+                peopleCount.textContent = people.length;
+                peopleList.innerHTML = `
+                    <div class="people-hidden-message">
+                        <p>People are currently hidden</p>
+                        <button class="btn-show-people" onclick="if(app) app.togglePeopleVisibility()">Show People</button>
+                    </div>
+                `;
+            }
+
+            setPeopleView(view) {
+                this.peopleView = view;
+                const peopleList = document.getElementById('people-list');
+                const cardViewBtn = document.getElementById('people-card-view-btn');
+                const listViewBtn = document.getElementById('people-list-view-btn');
+
+                if (view === 'card') {
+                    peopleList.classList.remove('list-view');
+                    cardViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                } else {
+                    peopleList.classList.add('list-view');
+                    cardViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                }
+
+                if (this.peopleVisible) {
+                    this.loadPeople();
+                }
             }
 
             handlePersonSubmit() {
                 const name = document.getElementById('person-name').value.trim();
                 const department = document.getElementById('person-department').value.trim();
                 const editingPersonId = document.getElementById('editing-person-id').value;
-                
+
                 if (!name) {
-                    alert('Please enter a person name');
+                    this.showAlert('Validation Error', 'Please enter a person name');
                     return;
                 }
-                
+
                 if (editingPersonId) {
                     // Update existing person
                     this.dataService.updatePerson(editingPersonId, name, department);
@@ -1059,9 +2397,13 @@
                     // Add new person
                     this.dataService.addPerson(name, department);
                 }
-                
+
                 this.resetPersonForm();
                 this.loadPeople();
+                // Refresh borrow dropdown if on borrow tab
+                if (this.activeTab === 'borrow') {
+                    this.loadBorrowData();
+                }
             }
 
             editPerson(personId) {
@@ -1082,7 +2424,11 @@
                 if (confirm('Are you sure you want to delete this person?')) {
                     this.dataService.removePerson(personId);
                     this.loadPeople();
-                    
+                    // Refresh borrow dropdown if on borrow tab
+                    if (this.activeTab === 'borrow') {
+                        this.loadBorrowData();
+                    }
+
                     // Reset form if we were editing this person
                     const editingPersonId = document.getElementById('editing-person-id').value;
                     if (editingPersonId === personId) {
@@ -1103,35 +2449,45 @@
                 const tools = this.dataService.getAllTools();
                 const people = this.dataService.getAllPeople();
                 const activeBorrows = this.dataService.getActiveBorrows();
-                
-                // Update dropdowns
+
+                // Update dropdowns (always, even if borrows list is hidden)
                 const toolSelect = document.getElementById('borrow-tool');
                 const personSelect = document.getElementById('borrow-person');
+                
+                // Update tool dropdown
+                if (toolSelect) {
+                    toolSelect.innerHTML = '<option value="">-- Select a Tool --</option>';
+                    tools.filter(tool => tool.available > 0)
+                        .forEach(tool => {
+                            const option = document.createElement('option');
+                            option.value = tool.id;
+                            option.textContent = `${tool.name} (Available: ${tool.available})`;
+                            toolSelect.appendChild(option);
+                        });
+                }
+
+                // Update person dropdown
+                if (personSelect) {
+                    personSelect.innerHTML = '<option value="">-- Select a Person --</option>';
+                    people.forEach(person => {
+                        const option = document.createElement('option');
+                        option.value = person.id;
+                        option.textContent = person.name;
+                        personSelect.appendChild(option);
+                    });
+                }
+
+                // Update active borrows list (only if visible)
                 const activeBorrowsList = document.getElementById('active-borrows-list');
                 const activeBorrowsCount = document.getElementById('active-borrows-count');
                 
-                // Update tool dropdown
-                toolSelect.innerHTML = '<option value="">-- Select a Tool --</option>';
-                tools.filter(tool => tool.available > 0)
-                    .forEach(tool => {
-                        const option = document.createElement('option');
-                        option.value = tool.id;
-                        option.textContent = `${tool.name} (Available: ${tool.available})`;
-                        toolSelect.appendChild(option);
-                    });
-                
-                // Update person dropdown
-                personSelect.innerHTML = '<option value="">-- Select a Person --</option>';
-                people.forEach(person => {
-                    const option = document.createElement('option');
-                    option.value = person.id;
-                    option.textContent = person.name;
-                    personSelect.appendChild(option);
-                });
-                
-                // Update active borrows list
+                if (!this.borrowsVisible) {
+                    this.showBorrowsHiddenMessage();
+                    return;
+                }
+
                 activeBorrowsCount.textContent = activeBorrows.length;
-                
+
                 if (activeBorrows.length === 0) {
                     activeBorrowsList.innerHTML = '<p class="no-active-borrows">No active borrows at the moment.</p>';
                     return;
@@ -1171,32 +2527,40 @@
             handleBorrowSubmit() {
                 const toolId = document.getElementById('borrow-tool').value;
                 const personId = document.getElementById('borrow-person').value;
-                
+
                 if (!toolId || !personId) {
-                    alert('Please select both a tool and a person');
+                    this.showAlert('Validation Error', 'Please select both a tool and a person');
                     return;
                 }
-                
+
                 try {
                     this.dataService.borrowTool(toolId, personId);
-                    alert('Tool borrowed successfully!');
+                    this.showAlert('Success', 'Tool borrowed successfully!');
                     this.resetBorrowForm();
                     this.loadBorrowData();
+                    // Refresh tools list if visible
+                    if (this.toolsVisible) {
+                        this.loadTools();
+                    }
                 } catch (error) {
-                    alert(error.message);
+                    this.showAlert('Error', error.message);
                 }
             }
 
             handleReturnTool(recordId) {
                 const record = this.dataService.getActiveBorrows().find(r => r.id === recordId);
                 if (!record) return;
-                
+
                 try {
                     this.dataService.returnTool(record.toolId, record.personId);
-                    alert('Tool returned successfully!');
+                    this.showAlert('Success', 'Tool returned successfully!');
                     this.loadBorrowData();
+                    // Refresh tools list if visible
+                    if (this.toolsVisible) {
+                        this.loadTools();
+                    }
                 } catch (error) {
-                    alert(error.message);
+                    this.showAlert('Error', error.message);
                 }
             }
 
@@ -1204,34 +2568,112 @@
                 document.getElementById('borrow-form').reset();
             }
 
+            // Borrows visibility and view methods
+            toggleBorrowsVisibility() {
+                this.borrowsVisible = !this.borrowsVisible;
+                const borrowsList = document.getElementById('active-borrows-list');
+                const toggleBtn = document.getElementById('toggle-borrows-btn');
+                const viewControls = document.querySelector('.borrows-view-controls');
+
+                if (this.borrowsVisible) {
+                    toggleBtn.textContent = 'Hide Borrows';
+                    viewControls.style.visibility = 'visible';
+                    this.loadBorrowData();
+                } else {
+                    this.showBorrowsHiddenMessage();
+                    toggleBtn.textContent = 'Show Borrows';
+                    viewControls.style.visibility = 'hidden';
+                }
+            }
+
+            showBorrowsHiddenMessage() {
+                const borrowsList = document.getElementById('active-borrows-list');
+                const borrowsCount = document.getElementById('active-borrows-count');
+                const activeBorrows = this.dataService.getActiveBorrows();
+
+                borrowsCount.textContent = activeBorrows.length;
+                borrowsList.innerHTML = `
+                    <div class="borrows-hidden-message">
+                        <p>Active borrows are currently hidden</p>
+                        <button class="btn-show-borrows" onclick="if(app) app.toggleBorrowsVisibility()">Show Borrows</button>
+                    </div>
+                `;
+            }
+
+            setBorrowsView(view) {
+                this.borrowsView = view;
+                const borrowsList = document.getElementById('active-borrows-list');
+                const cardViewBtn = document.getElementById('borrows-card-view-btn');
+                const listViewBtn = document.getElementById('borrows-list-view-btn');
+
+                if (view === 'card') {
+                    borrowsList.classList.remove('list-view');
+                    cardViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                } else {
+                    borrowsList.classList.add('list-view');
+                    cardViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                }
+
+                if (this.borrowsVisible) {
+                    this.loadBorrowData();
+                }
+            }
+
             // History methods
             loadHistory() {
                 const filter = document.getElementById('history-filter').value;
+                const dateInput = document.getElementById('history-date');
+                const selectedDate = dateInput ? dateInput.value : null;
+                
+                // Get all history (30 days)
                 const history = this.dataService.getBorrowHistory(30);
                 const historyList = document.getElementById('history-list');
                 const historyCount = document.getElementById('history-count');
-                
-                // Filter history based on selection
-                const filteredHistory = history.filter(record => {
+
+                // Filter by date if selected
+                let dateFilteredHistory = history;
+                if (selectedDate) {
+                    const selectedDateObj = new Date(selectedDate);
+                    selectedDateObj.setHours(23, 59, 59, 999); // End of day
+                    
+                    dateFilteredHistory = history.filter(record => {
+                        const borrowDate = new Date(record.borrowDate);
+                        const returnDate = record.returnDate ? new Date(record.returnDate) : null;
+                        
+                        // Check if borrow date matches selected date
+                        const borrowMatches = borrowDate.toDateString() === selectedDateObj.toDateString();
+                        
+                        // Check if return date matches selected date
+                        const returnMatches = returnDate && returnDate.toDateString() === selectedDateObj.toDateString();
+                        
+                        return borrowMatches || returnMatches;
+                    });
+                }
+
+                // Filter by status (borrowed/returned)
+                const filteredHistory = dateFilteredHistory.filter(record => {
                     if (filter === 'all') return true;
                     if (filter === 'borrowed') return record.returnDate === null;
                     if (filter === 'returned') return record.returnDate !== null;
                     return true;
                 });
-                
+
                 historyCount.textContent = filteredHistory.length;
-                
+
                 if (filteredHistory.length === 0) {
-                    historyList.innerHTML = '<p class="no-history">No history records found.</p>';
+                    const dateMsg = selectedDate ? ` on ${selectedDate}` : '';
+                    historyList.innerHTML = `<p class="no-history">No history records found${dateMsg}.</p>`;
                     return;
                 }
-                
+
                 historyList.innerHTML = '';
                 filteredHistory.forEach(record => {
                     const tool = this.dataService.getToolById(record.toolId);
                     const person = this.dataService.getPersonById(record.personId);
                     const isReturned = record.returnDate !== null;
-                    
+
                     if (tool && person) {
                         const historyRecord = document.createElement('div');
                         historyRecord.className = `history-record ${isReturned ? 'returned' : 'borrowed'}`;
@@ -1253,6 +2695,67 @@
                 });
             }
 
+            setHistoryDateToday() {
+                const dateInput = document.getElementById('history-date');
+                if (dateInput) {
+                    dateInput.value = '';
+                    this.loadHistory();
+                }
+            }
+
+            // History visibility and view methods
+            toggleHistoryVisibility() {
+                this.historyVisible = !this.historyVisible;
+                const historyList = document.getElementById('history-list');
+                const toggleBtn = document.getElementById('toggle-history-btn');
+                const viewControls = document.querySelector('.history-view-controls');
+
+                if (this.historyVisible) {
+                    toggleBtn.textContent = 'Hide History';
+                    viewControls.style.visibility = 'visible';
+                    this.loadHistory();
+                } else {
+                    this.showHistoryHiddenMessage();
+                    toggleBtn.textContent = 'Show History';
+                    viewControls.style.visibility = 'hidden';
+                }
+            }
+
+            showHistoryHiddenMessage() {
+                const historyList = document.getElementById('history-list');
+                const historyCount = document.getElementById('history-count');
+                const history = this.dataService.getBorrowHistory(30);
+
+                historyCount.textContent = history.length;
+                historyList.innerHTML = `
+                    <div class="history-hidden-message">
+                        <p>History records are currently hidden</p>
+                        <button class="btn-show-history" onclick="if(app) app.toggleHistoryVisibility()">Show History</button>
+                    </div>
+                `;
+            }
+
+            setHistoryView(view) {
+                this.historyView = view;
+                const historyList = document.getElementById('history-list');
+                const cardViewBtn = document.getElementById('history-card-view-btn');
+                const listViewBtn = document.getElementById('history-list-view-btn');
+
+                if (view === 'card') {
+                    historyList.classList.remove('list-view');
+                    cardViewBtn.classList.add('active');
+                    listViewBtn.classList.remove('active');
+                } else {
+                    historyList.classList.add('list-view');
+                    cardViewBtn.classList.remove('active');
+                    listViewBtn.classList.add('active');
+                }
+
+                if (this.historyVisible) {
+                    this.loadHistory();
+                }
+            }
+
             // Utility methods
             escapeHtml(text) {
                 const map = {
@@ -1262,14 +2765,596 @@
                     '"': '&quot;',
                     "'": '&#039;'
                 };
-                
+
                 return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            // QR Code methods
+            showQRCode(toolId) {
+                const tool = this.dataService.getToolById(toolId);
+                if (!tool) return;
+
+                // Check if QRCode library is available
+                if (typeof QRCode === 'undefined') {
+                    this.showAlert('QR Code Library Not Loaded', 'QR Code library is not loaded. Please check your internet connection.');
+                    return;
+                }
+
+                this.currentTool = tool;
+                
+                // Reset selections
+                document.getElementById('qr-size').value = 'm';
+                document.getElementById('qr-format').value = 'full';
+                document.getElementById('qr-style').value = 'standard';
+
+                this.regenerateQR();
+
+                // Show modal
+                document.getElementById('qr-modal').classList.add('active');
+            }
+
+            regenerateQR() {
+                if (!this.currentTool) return;
+
+                // Check if QRCode library is available
+                if (typeof QRCode === 'undefined') {
+                    console.error('QRCode library not loaded');
+                    return;
+                }
+
+                const size = document.getElementById('qr-size').value;
+                const format = document.getElementById('qr-format').value;
+                const style = document.getElementById('qr-style').value;
+
+                // Clear previous QR code
+                document.getElementById('qrcode').innerHTML = '';
+
+                // Generate QR code data based on format
+                const qrData = this.getQRData(this.currentTool, format);
+
+                // Size mapping
+                const sizeMap = { xs: 50, s: 80, m: 120, l: 180 };
+                const qrSize = sizeMap[size] || 120;
+
+                try {
+                    // Generate QR code
+                    new QRCode(document.getElementById('qrcode'), {
+                        text: qrData,
+                        width: qrSize,
+                        height: qrSize,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (error) {
+                    console.error('Error generating QR code:', error);
+                }
+
+                // Update tool info display
+                const toolName = this.currentTool.name;
+                document.getElementById('qr-tool-name').textContent = style === 'compact' ? '' : toolName;
+            }
+
+            getQRData(tool, format) {
+                switch(format) {
+                    case 'compact':
+                        return tool.id;
+                    case 'url':
+                        return `tool:${tool.id}`;
+                    case 'full':
+                    default:
+                        return JSON.stringify({
+                            id: tool.id,
+                            name: tool.name,
+                            description: tool.description,
+                            quantity: tool.quantity
+                        });
+                }
+            }
+
+            closeQRModal() {
+                document.getElementById('qr-modal').classList.remove('active');
+                this.currentTool = null;
+            }
+
+            printQRCode() {
+                const size = document.getElementById('qr-size').value;
+                const format = document.getElementById('qr-format').value;
+                const style = document.getElementById('qr-style').value;
+                const tool = this.currentTool;
+
+                if (!tool) return;
+
+                // Generate print labels
+                const container = document.getElementById('print-labels-container');
+                container.innerHTML = '';
+
+                const label = document.createElement('div');
+                label.className = `print-label ${size} ${style}`;
+
+                const qrData = this.getQRData(tool, format);
+                const sizeMap = { xs: 50, s: 80, m: 120, l: 180 };
+                const qrSize = sizeMap[size] || 120;
+
+                label.innerHTML = `
+                    <h4>${this.escapeHtml(tool.name)}</h4>
+                    <p>${this.escapeHtml(tool.description || 'No description')}</p>
+                    <img class="qr-print-img" src="" alt="QR Code" data-qr="${qrData}" data-size="${qrSize}" />
+                `;
+
+                container.appendChild(label);
+
+                // Generate QR code for print
+                setTimeout(() => {
+                    const img = label.querySelector('.qr-print-img');
+                    new QRCode(img, {
+                        text: qrData,
+                        width: qrSize,
+                        height: qrSize,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+
+                    // Trigger print
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                }, 100);
+            }
+
+            // Batch QR Code methods
+            showBatchQR() {
+                document.getElementById('batch-size').value = 's';
+                document.getElementById('batch-format').value = 'full';
+                this.generateBatchQR();
+                document.getElementById('batch-modal').classList.add('active');
+            }
+
+            generateBatchQR() {
+                const size = document.getElementById('batch-size').value;
+                const format = document.getElementById('batch-format').value;
+                const tools = this.dataService.getAllTools();
+                const container = document.getElementById('batch-qr-container');
+
+                container.innerHTML = '';
+
+                if (tools.length === 0) {
+                    container.innerHTML = '<p>No tools available.</p>';
+                    return;
+                }
+
+                const sizeMap = { xs: 50, s: 80, m: 120, l: 180 };
+                const qrSize = sizeMap[size] || 80;
+
+                tools.forEach(tool => {
+                    const item = document.createElement('div');
+                    item.className = 'batch-qr-item';
+
+                    const qrData = this.getQRData(tool, format);
+                    item.innerHTML = `
+                        <div class="batch-qr-code" data-qr="${qrData}" data-size="${qrSize}"></div>
+                        <p>${this.escapeHtml(tool.name)}</p>
+                    `;
+
+                    container.appendChild(item);
+
+                    // Generate QR code
+                    new QRCode(item.querySelector('.batch-qr-code'), {
+                        text: qrData,
+                        width: qrSize,
+                        height: qrSize,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                });
+            }
+
+            closeBatchModal() {
+                document.getElementById('batch-modal').classList.remove('active');
+            }
+
+            printBatchQR() {
+                const size = document.getElementById('batch-size').value;
+                const format = document.getElementById('batch-format').value;
+                const tools = this.dataService.getAllTools();
+
+                // Generate print labels for all tools
+                const container = document.getElementById('print-labels-container');
+                container.innerHTML = '';
+                container.parentElement.classList.add('batch-grid');
+
+                const sizeMap = { xs: 50, s: 80, m: 120, l: 180 };
+
+                tools.forEach(tool => {
+                    const label = document.createElement('div');
+                    label.className = `print-label ${size}`;
+
+                    const qrData = this.getQRData(tool, format);
+                    const qrSize = sizeMap[size] || 80;
+
+                    label.innerHTML = `
+                        <h4>${this.escapeHtml(tool.name)}</h4>
+                        <p>${this.escapeHtml(tool.description || '')}</p>
+                        <img class="qr-print-img" src="" alt="QR Code" data-qr="${qrData}" data-size="${qrSize}" />
+                    `;
+
+                    container.appendChild(label);
+                });
+
+                // Generate QR codes for print
+                setTimeout(() => {
+                    container.querySelectorAll('.qr-print-img').forEach(img => {
+                        const qrData = img.getAttribute('data-qr');
+                        const qrSize = parseInt(img.getAttribute('data-size'));
+                        new QRCode(img, {
+                            text: qrData,
+                            width: qrSize,
+                            height: qrSize,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    });
+
+                    // Trigger print
+                    setTimeout(() => {
+                        window.print();
+                        container.parentElement.classList.remove('batch-grid');
+                    }, 500);
+                }, 100);
+            }
+
+            // QR Scanner methods
+            initScanner() {
+                const scannerInput = document.getElementById('scanner-input');
+                if (scannerInput) {
+                    scannerInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            this.handleScanInput(e.target.value.trim());
+                            e.target.value = '';
+                        }
+                    });
+                }
+            }
+
+            setScanMode(mode) {
+                this.scanMode = mode;
+                this.scannedTool = null;
+                this.scannedPerson = null;
+                
+                // Update button states
+                document.getElementById('scan-borrow-btn').classList.toggle('active', mode === 'borrow');
+                document.getElementById('scan-return-btn').classList.toggle('active', mode === 'return');
+                
+                // Update status
+                const statusEl = document.getElementById('scanner-status');
+                statusEl.textContent = 'Ready to Scan';
+                statusEl.className = 'scanner-status ready';
+                
+                // Clear results
+                document.getElementById('scanner-results').innerHTML = '';
+                document.getElementById('scanner-actions').style.display = 'none';
+                
+                // Focus input
+                document.getElementById('scanner-input').focus();
+            }
+
+            handleScanInput(data) {
+                if (!data) return;
+                
+                let scannedData;
+                try {
+                    // Try to parse as JSON (full format)
+                    scannedData = JSON.parse(data);
+                } catch (e) {
+                    // Use as ID (compact format)
+                    scannedData = { id: data };
+                }
+
+                // Determine if it's a tool or person
+                const isTool = scannedData.name && (scannedData.quantity !== undefined || scannedData.description !== undefined);
+                
+                if (isTool) {
+                    this.scannedTool = this.dataService.getToolById(scannedData.id);
+                    if (!this.scannedTool) {
+                        this.showAlert('Scan Error', 'Tool not found in database');
+                        return;
+                    }
+                    this.updateScannerResults();
+                } else {
+                    // Assume it's a person
+                    this.scannedPerson = this.dataService.getPersonById(scannedData.id);
+                    if (!this.scannedPerson) {
+                        this.showAlert('Scan Error', 'Person not found in database');
+                        return;
+                    }
+                    this.updateScannerResults();
+                }
+            }
+
+            updateScannerResults() {
+                const resultsDiv = document.getElementById('scanner-results');
+                const actionsDiv = document.getElementById('scanner-actions');
+                const statusEl = document.getElementById('scanner-status');
+                
+                let html = '';
+                
+                if (this.scannedTool) {
+                    html += `
+                        <div class="scanner-result">
+                            <h5>🔧 Tool Scanned</h5>
+                            <p><strong>Name:</strong> ${this.escapeHtml(this.scannedTool.name)}</p>
+                            <p><strong>Available:</strong> ${this.scannedTool.available} of ${this.scannedTool.quantity}</p>
+                        </div>
+                    `;
+                    
+                    if (this.scanMode === 'borrow') {
+                        statusEl.textContent = 'Scan Person';
+                        statusEl.className = 'scanner-status waiting-person';
+                    } else {
+                        // Return mode - can return with just tool
+                        statusEl.textContent = 'Ready to Return';
+                        statusEl.className = 'scanner-status complete';
+                        actionsDiv.style.display = 'flex';
+                    }
+                }
+                
+                if (this.scannedPerson) {
+                    html += `
+                        <div class="scanner-result">
+                            <h5>👤 Person Scanned</h5>
+                            <p><strong>Name:</strong> ${this.escapeHtml(this.scannedPerson.name)}</p>
+                            ${this.scannedPerson.department ? `<p><strong>Department:</strong> ${this.escapeHtml(this.scannedPerson.department)}</p>` : ''}
+                            <p><strong>Borrowed Tools:</strong> ${this.scannedPerson.borrowedTools.length}</p>
+                        </div>
+                    `;
+                    
+                    if (this.scannedTool) {
+                        statusEl.textContent = 'Ready to ' + (this.scanMode === 'borrow' ? 'Borrow' : 'Return');
+                        statusEl.className = 'scanner-status complete';
+                        actionsDiv.style.display = 'flex';
+                    } else {
+                        statusEl.textContent = 'Scan Tool';
+                        statusEl.className = 'scanner-status waiting-person';
+                    }
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+                if (this.scannedTool && this.scannedPerson) {
+                    actionsDiv.style.display = 'flex';
+                }
+            }
+
+            confirmScan() {
+                if (!this.scannedTool || !this.scannedPerson) {
+                    this.showAlert('Error', 'Please scan both tool and person');
+                    return;
+                }
+
+                try {
+                    if (this.scanMode === 'borrow') {
+                        this.dataService.borrowTool(this.scannedTool.id, this.scannedPerson.id);
+                        this.showAlert('Success', `Tool "${this.scannedTool.name}" borrowed by ${this.scannedPerson.name}`);
+                    } else {
+                        this.dataService.returnTool(this.scannedTool.id, this.scannedPerson.id);
+                        this.showAlert('Success', `Tool "${this.scannedTool.name}" returned by ${this.scannedPerson.name}`);
+                    }
+                    
+                    // Refresh displays
+                    if (this.toolsVisible) this.loadTools();
+                    if (this.borrowsVisible) this.loadBorrowData();
+                    
+                    // Clear and reset
+                    this.clearScan();
+                } catch (error) {
+                    this.showAlert('Error', error.message);
+                }
+            }
+
+            clearScan() {
+                this.scannedTool = null;
+                this.scannedPerson = null;
+                document.getElementById('scanner-results').innerHTML = '';
+                document.getElementById('scanner-actions').style.display = 'none';
+                document.getElementById('scanner-input').value = '';
+                
+                const statusEl = document.getElementById('scanner-status');
+                statusEl.textContent = 'Ready to Scan';
+                statusEl.className = 'scanner-status ready';
+                
+                document.getElementById('scanner-input').focus();
+            }
+
+            showPersonQRCode(personId) {
+                const person = this.dataService.getPersonById(personId);
+                if (!person) return;
+
+                if (typeof QRCode === 'undefined') {
+                    this.showAlert('QR Code Library Not Loaded', 'QR Code library is not loaded. Please check your internet connection.');
+                    return;
+                }
+
+                this.currentTool = { name: person.name, id: person.id, description: person.department || '', quantity: 0 };
+                
+                document.getElementById('qr-size').value = 'm';
+                document.getElementById('qr-format').value = 'compact';
+                document.getElementById('qr-style').value = 'standard';
+
+                // Clear previous QR code
+                document.getElementById('qrcode').innerHTML = '';
+
+                // Generate QR code data for person
+                const qrData = JSON.stringify({
+                    id: person.id,
+                    name: person.name,
+                    department: person.department,
+                    type: 'person'
+                });
+
+                try {
+                    new QRCode(document.getElementById('qrcode'), {
+                        text: qrData,
+                        width: 120,
+                        height: 120,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (error) {
+                    console.error('Error generating QR code:', error);
+                }
+
+                document.getElementById('qr-tool-name').textContent = person.name;
+                document.getElementById('qr-modal').classList.add('active');
+            }
+
+            // Data Management methods
+            exportData() {
+                const data = {
+                    tools: this.dataService.tools,
+                    people: this.dataService.people,
+                    borrowRecords: this.dataService.borrowRecords,
+                    exportDate: new Date().toISOString()
+                };
+
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `psw-inventory-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showAlert('Export Complete', 'Data exported successfully!');
+            }
+
+            importData(input) {
+                const file = input.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        if (!data.tools || !data.people) {
+                            throw new Error('Invalid backup file format');
+                        }
+
+                        if (!confirm('This will replace all current data. Are you sure?')) {
+                            return;
+                        }
+
+                        this.dataService.tools = data.tools.map(t => {
+                            const tool = new Tool(t.id, t.name, t.description, t.quantity);
+                            tool.available = t.available;
+                            return tool;
+                        });
+                        
+                        this.dataService.people = data.people.map(p => {
+                            const person = new Person(p.id, p.name, p.department);
+                            person.borrowedTools = p.borrowedTools || [];
+                            return person;
+                        });
+                        
+                        this.dataService.borrowRecords = data.borrowRecords ? 
+                            data.borrowRecords.map(br => new BorrowRecord(
+                                br.id, br.toolId, br.personId, 
+                                new Date(br.borrowDate), 
+                                br.returnDate ? new Date(br.returnDate) : null
+                            )) : [];
+
+                        this.dataService.saveToLocalStorage();
+                        this.dataService.updateAvailableQuantities();
+                        
+                        // Refresh all displays
+                        if (this.toolsVisible) this.loadTools();
+                        if (this.peopleVisible) this.loadPeople();
+                        if (this.borrowsVisible) this.loadBorrowData();
+                        if (this.historyVisible) this.loadHistory();
+                        
+                        this.showAlert('Import Complete', 'Data imported successfully!');
+                    } catch (error) {
+                        this.showAlert('Import Error', 'Failed to import data: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+                
+                // Reset input
+                input.value = '';
+            }
+
+            clearAllData() {
+                if (confirm('WARNING: This will delete ALL data (tools, people, borrow records). This cannot be undone!\n\nAre you absolutely sure?')) {
+                    if (confirm('Really sure? This action is permanent!')) {
+                        localStorage.removeItem('psw_tools');
+                        localStorage.removeItem('psw_people');
+                        localStorage.removeItem('psw_borrowRecords');
+                        
+                        this.dataService.tools = [];
+                        this.dataService.people = [];
+                        this.dataService.borrowRecords = [];
+                        
+                        // Refresh all displays
+                        if (this.toolsVisible) this.loadTools();
+                        else this.showToolsHiddenMessage();
+                        
+                        if (this.peopleVisible) this.loadPeople();
+                        else this.showPeopleHiddenMessage();
+                        
+                        if (this.borrowsVisible) this.loadBorrowData();
+                        else this.showBorrowsHiddenMessage();
+                        
+                        if (this.historyVisible) this.loadHistory();
+                        else this.showHistoryHiddenMessage();
+                        
+                        this.showAlert('Data Cleared', 'All data has been deleted.');
+                    }
+                }
+            }
+
+            // Alert modal methods
+            showAlert(title, message) {
+                document.getElementById('alert-title').textContent = title;
+                document.getElementById('alert-message').textContent = message;
+                document.getElementById('alert-modal').classList.add('active');
+            }
+
+            closeAlert() {
+                document.getElementById('alert-modal').classList.remove('active');
+            }
+
+            // Auto-save status indicator
+            showSaveStatus() {
+                const statusEl = document.getElementById('auto-save-status');
+                const indicator = document.getElementById('save-indicator');
+                const textEl = document.getElementById('save-status-text');
+
+                if (statusEl && indicator && textEl) {
+                    statusEl.classList.add('saving');
+                    indicator.classList.add('saving');
+                    textEl.textContent = '⏳ Saving...';
+
+                    setTimeout(() => {
+                        statusEl.classList.remove('saving');
+                        indicator.classList.remove('saving');
+                        textEl.textContent = '✓ Auto-save enabled - All changes saved automatically';
+                    }, 1000);
+                }
             }
         }
 
         // Initialize the app when the DOM is loaded
+        let app;
         document.addEventListener('DOMContentLoaded', () => {
-            const app = new UIController();
+            app = new UIController();
         });
     </script>
 </body>
