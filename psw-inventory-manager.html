@@ -14,6 +14,35 @@
         }, true);
     </script>
     <style>
+        /* CSS Variables for Theming */
+        :root {
+            --bg-primary: #f0f0f0;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --bg-header: #f5f5f5;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #e0e0e0;
+            --border-input: #dddddd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --shadow-modal: rgba(0, 0, 0, 0.3);
+            --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --bg-header: #1a1a2e;
+            --text-primary: #eaeaea;
+            --text-secondary: #b0b0b0;
+            --border-color: #2d2d44;
+            --border-input: #3d3d5c;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --shadow-modal: rgba(0, 0, 0, 0.5);
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
         /* Global Styles */
         * {
             box-sizing: border-box;
@@ -27,9 +56,10 @@
                 sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background-color: #f0f0f0;
-            color: #333;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .app {
@@ -37,14 +67,14 @@
         }
 
         .main-content {
-            background-color: #ffffff;
+            background-color: var(--bg-secondary);
             min-height: calc(100vh - 120px);
             padding: 20px;
         }
 
         h1, h2, h3, h4 {
             margin-bottom: 0.5em;
-            color: #333;
+            color: var(--text-primary);
         }
 
         h1 {
@@ -85,10 +115,12 @@
         input, select, textarea {
             width: 100%;
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-input);
             border-radius: 4px;
             font-family: inherit;
             font-size: 1rem;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         input:focus, select:focus, textarea:focus {
@@ -133,6 +165,35 @@
             color: white;
         }
 
+        /* Dark Mode Toggle */
+        .dark-mode-toggle {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: var(--border-color);
+        }
+
+        [data-theme="dark"] .dark-mode-toggle {
+            background-color: #ffd700;
+            color: #1a1a2e;
+            border-color: #ffd700;
+        }
+
+        [data-theme="dark"] .dark-mode-toggle:hover {
+            background-color: #ffed4e;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -141,13 +202,14 @@
 
         /* Header Styles */
         .app-header {
-            background-color: #f5f5f5;
+            background-color: var(--bg-header);
             padding: 1rem 2rem;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            gap: 10px;
         }
 
         .logo-container {
@@ -171,14 +233,14 @@
 
         .app-title {
             font-size: 1.5rem;
-            color: #333;
+            color: var(--text-primary);
             margin: 0;
         }
 
         /* Navigation Styles */
         .navigation {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e0e0e0;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .nav-tabs {
@@ -198,7 +260,7 @@
         }
 
         .nav-tab:hover {
-            background-color: #f5f5f5;
+            background-color: var(--bg-tertiary);
         }
 
         .nav-tab.active {
@@ -212,7 +274,7 @@
         }
 
         .tools-form-container, .people-form-container, .borrow-form-container {
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 30px;
@@ -226,11 +288,11 @@
         }
 
         .tool-card, .person-card, .borrow-record, .history-record {
-            background-color: #fff;
-            border: 1px solid #e0e0e0;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--card-shadow);
         }
 
         .tool-info, .person-info, .borrow-info, .history-info {
@@ -238,7 +300,7 @@
         }
 
         .tool-description, .person-department, .person-borrowed {
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 10px;
         }
 
@@ -247,7 +309,7 @@
             justify-content: space-between;
             margin-top: 10px;
             padding-top: 10px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--border-color);
         }
 
         .tool-actions, .person-actions, .borrow-actions, .history-status {
@@ -258,7 +320,7 @@
 
         .no-tools, .no-people, .no-active-borrows, .no-history {
             text-align: center;
-            color: #666;
+            color: var(--text-secondary);
             font-style: italic;
             padding: 40px 20px;
         }
@@ -329,7 +391,7 @@
         .tools-list.list-view .tool-info .tool-description {
             display: inline;
             margin: 0 10px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .tools-list.list-view .tool-quantity {
@@ -358,14 +420,14 @@
         .tools-hidden-message {
             text-align: center;
             padding: 30px;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             margin-top: 20px;
         }
 
         .tools-hidden-message p {
             margin-bottom: 15px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* People Styles */
@@ -429,7 +491,7 @@
         .people-list.list-view .person-info .person-department {
             display: inline;
             margin: 0 10px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .people-list.list-view .person-info .person-borrowed {
@@ -451,14 +513,14 @@
         .people-hidden-message {
             text-align: center;
             padding: 30px;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             margin-top: 20px;
         }
 
         .people-hidden-message p {
             margin-bottom: 15px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* Borrow Styles */
@@ -538,14 +600,14 @@
         .borrows-hidden-message {
             text-align: center;
             padding: 30px;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             margin-top: 20px;
         }
 
         .borrows-hidden-message p {
             margin-bottom: 15px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* History Styles */
@@ -620,19 +682,19 @@
         .history-hidden-message {
             text-align: center;
             padding: 30px;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             margin-top: 20px;
         }
 
         .history-hidden-message p {
             margin-bottom: 15px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* QR Scanner Panel */
         .scanner-panel {
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border: 2px solid #ff8c00;
             border-radius: 8px;
             padding: 20px;
@@ -679,9 +741,10 @@
             width: 100%;
             padding: 12px 15px;
             font-size: 1rem;
-            border: 2px solid #ddd;
+            border: 2px solid var(--border-input);
             border-radius: 4px;
-            background-color: #fff;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         .scanner-input-container input:focus {
@@ -690,8 +753,8 @@
         }
 
         .scanner-result {
-            background-color: #fff;
-            border: 1px solid #ddd;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 15px;
             margin-top: 10px;
@@ -724,8 +787,9 @@
         .scan-mode-btn {
             flex: 1;
             padding: 10px;
-            border: 2px solid #ddd;
-            background-color: #fff;
+            border: 2px solid var(--border-color);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
@@ -744,7 +808,7 @@
 
         /* Data Management Styles */
         .data-management {
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             padding: 20px;
             margin-top: 30px;
@@ -760,14 +824,15 @@
             align-items: center;
             gap: 10px;
             padding: 10px;
-            background-color: #e8f5e9;
+            background-color: #2e7d32;
             border-radius: 4px;
             margin-bottom: 15px;
             font-size: 0.9rem;
+            color: white;
         }
 
         .auto-save-status.saving {
-            background-color: #fff3e0;
+            background-color: #f57c00;
         }
 
         .save-indicator {
@@ -819,7 +884,7 @@
 
         .borrow-date, .return-date {
             font-size: 0.9rem;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         /* History Styles */
@@ -841,10 +906,12 @@
 
         .history-date-filter input[type="date"] {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             font-family: inherit;
             font-size: 1rem;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         .history-date-filter input[type="date"]:focus {
@@ -895,7 +962,7 @@
         }
 
         .history-note {
-            color: #666;
+            color: var(--text-secondary);
             font-style: italic;
             margin-bottom: 20px;
         }
@@ -949,10 +1016,10 @@
         }
 
         .qr-modal-content {
-            background-color: #fff;
+            background-color: var(--bg-secondary);
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px var(--shadow-modal);
             text-align: center;
             max-width: 500px;
             width: 90%;
@@ -983,13 +1050,15 @@
         .qr-option-group label {
             font-size: 0.85rem;
             font-weight: 500;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .qr-option-group select {
             padding: 6px 10px;
             border-radius: 4px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-input);
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
             min-width: 120px;
         }
 
@@ -999,7 +1068,7 @@
             align-items: center;
             gap: 15px;
             padding: 20px;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
             border-radius: 8px;
             margin-bottom: 20px;
         }
@@ -1012,7 +1081,7 @@
         .qr-tool-info {
             font-size: 1.1rem;
             font-weight: 500;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .qr-modal-actions {
@@ -1198,10 +1267,10 @@
         }
 
         .alert-modal-content {
-            background-color: #fff;
+            background-color: var(--bg-secondary);
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 20px var(--shadow-modal);
             text-align: center;
             max-width: 400px;
             width: 90%;
@@ -1215,7 +1284,7 @@
         }
 
         .alert-modal-content p {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 20px;
             font-size: 1rem;
         }
@@ -1237,11 +1306,11 @@
         }
 
         .batch-qr-item {
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 10px;
             text-align: center;
-            background-color: #f8f9fa;
+            background-color: var(--bg-tertiary);
         }
 
         .batch-qr-item img {
@@ -1266,6 +1335,9 @@
                 </h1>
             </div>
             <h2 class="app-title">Inventory Management System</h2>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                🌙 Dark Mode
+            </button>
         </header>
         
         <nav class="navigation">
@@ -3356,6 +3428,29 @@
         document.addEventListener('DOMContentLoaded', () => {
             app = new UIController();
         });
+
+        // Dark mode toggle function
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            if (newTheme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('psw_theme', 'dark');
+            } else {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('psw_theme', 'light');
+            }
+        }
+
+        // Load saved theme preference on page load
+        (function loadTheme() {
+            const savedTheme = localStorage.getItem('psw_theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
     </script>
 </body>
 </html>
